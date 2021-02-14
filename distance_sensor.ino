@@ -23,6 +23,13 @@ byte greenBrightness = 187;   // 158-187
 long duration;
 int distance;
 
+// Averaging variables
+const int numReadings = 3; // Not many values are needed
+int readings[numReadings];
+int readIndex = 0;
+int total = 0;
+int average = 0;
+
 SoftwareSerial OpenLCD(rxPin, txPin); // RX (not used), TX
 
 void setup() {
@@ -37,7 +44,7 @@ void setup() {
   pinMode(echoPin, INPUT); // Sets the echoPin as an Input
 
   // Starts the serial communication for debug
-  // Serial.begin(9600); 
+  // Serial.begin(9600);
 
   // serLCD Display Setup
   OpenLCD.begin(9600); //Start communication with OpenLCD
@@ -52,6 +59,11 @@ void setup() {
   //Send the reset command to the display - this forces the cursor to return to the beginning of the display
   OpenLCD.write('|'); //Send setting character
   OpenLCD.write('-'); //Send clear display character
+
+  // Initialize the array to zero
+  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+    readings[thisReading] = 0;
+  }
 
   // Delay for startup message on serLCD display
   delay(2000);
@@ -87,7 +99,7 @@ void loop() {
   OpenLCD.write('|'); //Setting character
   OpenLCD.write('-'); //Clear display
     
-  // Light control based on distance in cm
+  // Avoid doing anything with bad data
   if (distance > 400 || distance < 2) {
     // This covers the known range
     // Quickly get another reading
@@ -96,21 +108,35 @@ void loop() {
     OpenLCD.print("Distance:       No Reading      "); //For 16x2 LCD
     delay(50);
   } else {
-    if (distance < 100) {
+
+    // Average the values
+    total = total - readings[readIndex]; // Remove last value from total
+    readings[readIndex] = distance;      // Set current value in array
+    total = total + readings[readIndex]; // Add new value to total
+    readIndex++;                         // Move to next value in array
+
+    // if we're at the end of the array wrap to the beginning
+    if (readIndex >= numReadings) {
+      readIndex = 0;
+    }
+
+    average = total / numReadings; // Average the values
+
+    // Light control based on distance in cm
+    if (average < 100) {
       digitalWrite(13, HIGH); // sets the digital pin 13 on
       BlinkM_fadeToRGB( blinkm_addr, 255, 0, 0);
-    } else if (distance < 200) {
+    } else if (average < 200) {
       digitalWrite(13, LOW);  // sets the digital pin 13 off
       BlinkM_fadeToRGB( blinkm_addr, 255, 165, 0);
-    } else if (distance < 400) {
+    } else if (average < 400) {
       digitalWrite(13, LOW);  // sets the digital pin 13 off
       BlinkM_fadeToRGB( blinkm_addr, 0, 255, 0);
     }
   
-    // Print after to avoid nonsense values
-
+    // Print after changing light
     OpenLCD.print("Distance: "); //For 16x2 LCD
-    OpenLCD.print(distance);
+    OpenLCD.print(average);
     OpenLCD.print(" cm            "); // Extra spaces overwrite extra chars
   
     delay(500);
