@@ -48,7 +48,7 @@ void setup() {
   pinMode(echoPin, INPUT); // Sets the echoPin as an Input
 
   // Starts the serial communication for debug
-  // Serial.begin(9600);
+  //Serial.begin(9600);
 
   // serLCD Display Setup
   OpenLCD.begin(9600); //Start communication with OpenLCD
@@ -126,6 +126,8 @@ void loop() {
     }
 
     average = total / numReadings; // Average the values
+    //Serial.print("Average: ");
+    //Serial.println(average);
 
     // Light control based on distance in cm
     if (average < sensorMax / 2) {
