@@ -15,6 +15,10 @@ const int trigPin = 9;  // HC-SR04 Trigger Pin
 const int echoPin = 10; // HC-SR04 Echo Pin
 const int ledPin = 13;  // pin for the LED
 
+// Sensor values
+const int sensorMin = 2;   // Known minimum is 2cm
+const int sensorMax = 150; // True max is supposed to be 400cm but there's too much noise above 150cm
+
 byte contrast = 2; //Lower is more contrast. 0 to 5 works for most displays.
 byte primaryBrightness = 157; // 128 - 157, lower is dimmer, higher is brighter
 byte greenBrightness = 187;   // 158-187 
@@ -100,11 +104,12 @@ void loop() {
   OpenLCD.write('-'); //Clear display
     
   // Avoid doing anything with bad data
-  if (distance > 400 || distance < 2) {
+  if (distance > sensorMax || distance < sensorMin) {
     // This covers the known range
     // Quickly get another reading
     digitalWrite(13, LOW);  // sets the digital pin 13 off
-    BlinkM_off( blinkm_addr );
+    // BlinkM_off( blinkm_addr );
+    BlinkM_fadeToRGB( blinkm_addr, 0, 255, 0); // green
     OpenLCD.print("Distance:       No Reading      "); //For 16x2 LCD
     delay(50);
   } else {
@@ -123,15 +128,12 @@ void loop() {
     average = total / numReadings; // Average the values
 
     // Light control based on distance in cm
-    if (average < 100) {
+    if (average < sensorMax / 2) {
       digitalWrite(13, HIGH); // sets the digital pin 13 on
-      BlinkM_fadeToRGB( blinkm_addr, 255, 0, 0);
-    } else if (average < 200) {
+      BlinkM_fadeToRGB( blinkm_addr, 255, 0, 0); // red
+    } else if (average < sensorMax) {
       digitalWrite(13, LOW);  // sets the digital pin 13 off
-      BlinkM_fadeToRGB( blinkm_addr, 255, 165, 0);
-    } else if (average < 400) {
-      digitalWrite(13, LOW);  // sets the digital pin 13 off
-      BlinkM_fadeToRGB( blinkm_addr, 0, 255, 0);
+      BlinkM_fadeToRGB( blinkm_addr, 255, 165, 0); // yellow
     }
   
     // Print after changing light
